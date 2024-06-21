@@ -3,17 +3,20 @@ This is the main driver file.
 It will be responsible for handling user input and displaying the current GameState object.
 """
 
-import pygame as p
-import chessEngine, chessAI
 import sys
 from multiprocessing import Process, Queue
+
+import pygame as p
+
+import chessAI
+import chessEngine
 
 WIDTH = HEIGHT = 512
 MOVE_LOG_PANEL_HEIGHT = 250
 MOVE_LOG_PANEL_WIDTH = WIDTH
 DIMENSION = 8
 SQ_SIZE = HEIGHT // DIMENSION
-MAX_FPS = 15
+MAX_FPS = 30
 
 IMAGES = {}
 colors = [p.Color("white"), p.Color("aquamarine3")]
@@ -26,6 +29,7 @@ def load_images():
 
 
 def main():
+    global retQueue
     p.init()
     screen = p.display.set_mode((WIDTH + MOVE_LOG_PANEL_WIDTH, HEIGHT))
     clock = p.time.Clock()
@@ -41,10 +45,10 @@ def main():
     gameOver = False
     aiThinking = False
     moveUndone = False
-    moveFinder = False
+    moveFinder = None
     moveLogFont = p.font.SysFont("Arial", 14, False, False)
     p1 = True
-    p2 = True
+    p2 = False
     while running:
         humanTurn = (gs.whiteToMove and p1) or (not gs.whiteToMove and p2)
         for e in p.event.get():
@@ -57,13 +61,13 @@ def main():
                     location = p.mouse.get_pos()
                     col = location[0] // SQ_SIZE
                     row = location[1] // SQ_SIZE
-                    if sqSelected == (row, col):
+                    if sqSelected == (row, col) or col >= 8:
                         sqSelected = ()
                         playerClicks = []
                     else:
                         sqSelected = (row, col)
                         playerClicks.append(sqSelected)
-                    if len(playerClicks) == 2:
+                    if len(playerClicks) == 2 and humanTurn:
                         move = chessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
                         for i in range(len(validMoves)):
                             if move == validMoves[i]:
@@ -89,7 +93,7 @@ def main():
                 if e.key == p.K_r:
                     gs = chessEngine.GameState()
                     validMoves = gs.getValidMoves()
-                    squareSelected = ()
+                    sqSelected = ()
                     playerClicks = []
                     moveMade = False
                     animate = False
@@ -112,7 +116,7 @@ def main():
                 gs.makeMove(aiMove)
                 moveMade = True
                 animate = True
-                aiThinking = True
+                aiThinking = False
 
         if moveMade:
             if animate:
@@ -211,7 +215,7 @@ def drawMoveLog(screen, gs, font):
 
 def drawEndgameText(screen, text):
     font = p.font.SysFont("Helvetica", 32, True, False)
-    textObject = font.render(text, False, p.Color("gray"))
+    textObject = font.render(text, False, p.Color("grey"))
     textLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - textObject.get_width() / 2, HEIGHT / 2 - textObject.get_height() / 2)
     screen.blit(textObject, textLocation)
     textObject = font.render(text, False, p.Color("black"))
@@ -229,14 +233,14 @@ def animateMove(move, screen, board, clock):
         drawPieces(screen, board)
         # erase the piece moved from its ending square
         color = colors[(move.endRow + move.endCol) % 2]
-        end_square = p.Rect(move.endCol * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
-        p.draw.rect(screen, color, end_square)
+        endSquare = p.Rect(move.endCol * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+        p.draw.rect(screen, color, endSquare)
         # draw captured piece onto rectangle
         if move.pieceCaptured != '--':
             if move.isEnpassantMove:
-                enpassant_row = move.endRow + 1 if move.pieceCaptured[0] == 'b' else move.endRow - 1
-                end_square = p.Rect(move.endCol * SQ_SIZE, enpassant_row * SQ_SIZE, SQ_SIZE, SQ_SIZE)
-            screen.blit(IMAGES[move.pieceCaptured], end_square)
+                enPassantRow = move.endRow + 1 if move.pieceCaptured[0] == 'b' else move.endRow - 1
+                endSquare = p.Rect(move.endCol * SQ_SIZE, enPassantRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+            screen.blit(IMAGES[move.pieceCaptured], endSquare)
         # draw moving piece
         screen.blit(IMAGES[move.pieceMoved], p.Rect(col * SQ_SIZE, row * SQ_SIZE, SQ_SIZE, SQ_SIZE))
         p.display.flip()
