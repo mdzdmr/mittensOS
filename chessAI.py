@@ -63,24 +63,23 @@ STALEMATE = 0
 DEPTH = 3
 
 
-def findBestMove(gs, valid_moves, retQueue):
+def findBestMove(gs, validMoves, retQueue):
     global nextMove
     nextMove = None
-    random.shuffle(valid_moves)
-    findMoveNegaMaxAlphaBeta(gs, valid_moves, DEPTH, -CHECKMATE, CHECKMATE, 1 if gs.whiteToMove else -1)
+    random.shuffle(validMoves)
+    findMoveNegaMaxAlphaBeta(gs, validMoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if gs.whiteToMove else -1)
     retQueue.put(nextMove)
 
 
-def findMoveNegaMaxAlphaBeta(gs, valid_moves, depth, alpha, beta, turn_multiplier):
+def findMoveNegaMaxAlphaBeta(gs, validMoves, depth, alpha, beta, turnMultiplier):
     global nextMove
     if depth == 0:
-        return turn_multiplier * scoreBoard(gs)
-    # Move ordering - implement later //TODO
+        return turnMultiplier * scoreBoard(gs)
     maxScore = -CHECKMATE
-    for move in valid_moves:
+    for move in validMoves:
         gs.makeMove(move)
-        next_moves = gs.getValidMoves()
-        score = -findMoveNegaMaxAlphaBeta(gs, next_moves, depth - 1, -beta, -alpha, -turn_multiplier)
+        nextMoves = gs.getValidMoves()
+        score = -findMoveNegaMaxAlphaBeta(gs, nextMoves, depth - 1, -beta, -alpha, -turnMultiplier)
         if score > maxScore:
             maxScore = score
             if depth == DEPTH:
@@ -90,7 +89,7 @@ def findMoveNegaMaxAlphaBeta(gs, valid_moves, depth, alpha, beta, turn_multiplie
             alpha = maxScore
         if alpha >= beta:
             break
-    return nextMove if depth == DEPTH else maxScore
+    return maxScore
 
 
 def scoreBoard(gs):
@@ -109,13 +108,13 @@ def scoreBoard(gs):
         for col in range(len(gs.board[row])):
             piece = gs.board[row][col]
             if piece != "--":
-                piece_positionScore = 0
+                piecePositionScore = 0
                 if piece[1] != "K":
-                    piece_positionScore = piecePositionScores[piece][row][col]
+                    piecePositionScore = piecePositionScores[piece][row][col]
                 if piece[0] == "w":
-                    score += pieceScore[piece[1]] + piece_positionScore
+                    score += pieceScore[piece[1]] + piecePositionScore
                 if piece[0] == "b":
-                    score -= pieceScore[piece[1]] + piece_positionScore
+                    score -= pieceScore[piece[1]] + piecePositionScore
 
     return score
 
