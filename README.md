@@ -20,17 +20,7 @@ To use this chess engine, clone the repository and install the required dependen
 ```bash
 git clone https://github.com/yourusername/chess-game-engine.git
 cd chess-game-engine
-pip install pygame numpy
-```
-
-## Usage
-
-### Running the Game
-
-Run the main driver file to start the game with a graphical interface.
-
-```bash
-python main.py
+pip install pygame 
 ```
 
 ## Project Structure
